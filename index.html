@@ -25,18 +25,45 @@
 
         document.body.appendChild(renderer.domElement);
 
+
+        var rtime;
+        var timeout = false;
+        var delta = 200;
         //Auto resize canvas when window is resized
         window.addEventListener('resize', ()=>{
             renderer.setSize(window.innerWidth,window.innerHeight);
             camera.aspect = window.innerWidth/window.innerHeight;
-            scene
+            timeout = false;
+                    while(scene.children.length > 0){ 
+                    scene.remove(scene.children[0]); 
+                }
             isSpawning = true;
+            var light = new THREE.PointLight(0xFFFFFF, 1, 500);
+            light.position.set(2,2,2);
+            scene.add(light);
+
+            rtime = new Date();
+            if (timeout === false) {
+                timeout = true;
+                setTimeout(resizeend, delta);
+            }
+
             camera.updateProjectionMatrix();
         })
 
+        function resizeend() {
+            if (new Date() - rtime < delta) {
+                setTimeout(resizeend, delta);
+            } else {
+
+
+                //alert('Done resizing');
+            }               
+        }
+
         function createMesh(newPosition){
             var geometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-            var material = new THREE.MeshPhongMaterial({color: Math.random() * 0xffffff, specular : 0xFFFFFF, shininess : 10});
+            var material = new THREE.MeshPhongMaterial({color: Math.random() * 0xffffff, specular : 0xFFFFFF, shininess : 50});
             var mesh = new THREE.Mesh(geometry, material);
             mesh.position.x = newPosition.x;
             mesh.position.y = newPosition.y;
@@ -52,10 +79,9 @@
 
 
         //Create Simple point light
-        var light = new THREE.PointLight(0xFFFFFF, 1, 500);
-        light.position.set(2,2,2);
+        var light = new THREE.PointLight(0xFFFFFF, 1, 100);
+        light.position.set(0,5,5);
         scene.add(light);
-
         //creates loop that gets the renderer to redraw everytime the screen is refreshed.
         var render = function(){
             requestAnimationFrame(render);
@@ -63,22 +89,22 @@
 
             if(isSpawning)
             {
-                for(var i = 0; i < 15; i++)
+                for(var i = 0; i < 5; i++)
                 {
                     var raycaster = new THREE.Raycaster();
                     var rayMouse = new THREE.Vector2();
-                    rayMouse.x = THREE.MathUtils.randFloat(-1,1);
-                    rayMouse.y = THREE.MathUtils.randFloat(-1,1);
+                    rayMouse.x = THREE.MathUtils.randFloat(-0.75,0.75);
+                    rayMouse.y = THREE.MathUtils.randFloat(-0.75,0.75);
 
                     var intersects = new THREE.Vector3();
                     raycaster.setFromCamera(rayMouse, camera );
                     raycaster.ray.intersectPlane(rayPlane, intersects);
                     console.log(i);
                     console.log(intersects);
-                    intersects.z = THREE.MathUtils.randFloat(-5,5);
+                    intersects.z = THREE.MathUtils.randFloat(-4,2);
                     createMesh(intersects);
 
-                    if(i == 14){
+                    if(i == 4){
                         isSpawning = false;
                     }
                 }
