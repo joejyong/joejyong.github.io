@@ -22,26 +22,58 @@
         var renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor("#e5e5e5");
         renderer.setSize(window.innerWidth,window.innerHeight);
-
         document.body.appendChild(renderer.domElement);
 
+        //Create Simple point light
+        var light = new THREE.PointLight(0xFFFFFF, 2, 500);
+        light.position.set(0,10,5);
+        scene.add(light);
+        
+        //Bool is true on init to create meshes on load
+        var hasSpawned = false;
 
+        //TICK - creates loop that gets the renderer to redraw everytime the screen is refreshed.
+        var render = function(){
+            requestAnimationFrame(render);
+            renderer.render(scene, camera);
+
+            if(!hasSpawned)
+            {
+                for(var i = 0; i < 5; i++)
+                {
+                    //Called here in render function as raycast for finding position is dependent on update
+                    createMesh(getRandomPointFromCamera());
+                    if(i == 4){
+                        hasSpawned = true;
+                    }
+                }
+            }
+
+        }
+
+        render();
+        
+        //Add listeners
+        window.addEventListener('click', OnMouseClick);
+        window.addEventListener('mousemove', OnMouseMove);
+
+        //variables for resize timeout event
         var rtime;
         var timeout = false;
         var delta = 200;
-        //Auto resize canvas when window is resized
+        //EVENT - On Window Resized
         window.addEventListener('resize', ()=>{
             renderer.setSize(window.innerWidth,window.innerHeight);
             camera.aspect = window.innerWidth/window.innerHeight;
             timeout = false;
-                    while(scene.children.length > 0){ 
-                    scene.remove(scene.children[0]); 
+            scene.traverse(function (node){
+                if(node instanceof THREE.Mesh){
+                    var newPos = getRandomPointFromCamera();
+                    node.position.x = newPos.x;
+                    node.position.y = newPos.y;
+                    node.position.z = newPos.z;
                 }
-            isSpawning = true;
-            var light = new THREE.PointLight(0xFFFFFF, 1, 500);
-            light.position.set(2,2,2);
-            scene.add(light);
-
+            });
             rtime = new Date();
             if (timeout === false) {
                 timeout = true;
@@ -51,74 +83,10 @@
             camera.updateProjectionMatrix();
         })
 
-        function resizeend() {
-            if (new Date() - rtime < delta) {
-                setTimeout(resizeend, delta);
-            } else {
-
-
-                //alert('Done resizing');
-            }               
-        }
-
-        function createMesh(newPosition){
-            var geometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-            var material = new THREE.MeshPhongMaterial({color: Math.random() * 0xffffff, specular : 0xFFFFFF, shininess : 50});
-            var mesh = new THREE.Mesh(geometry, material);
-            mesh.position.x = newPosition.x;
-            mesh.position.y = newPosition.y;
-            mesh.position.z = newPosition.z;
-            scene.add(mesh);
-            console.log(mesh.position);
-            console.log(newPosition);
-        }
-        //meshX = -10;
-        var rayPlane = new THREE.Plane( new THREE.Vector3( 0, 0, 1 ), 0 );
-        var isSpawning = true;
-
-
-
-        //Create Simple point light
-        var light = new THREE.PointLight(0xFFFFFF, 1, 100);
-        light.position.set(0,5,5);
-        scene.add(light);
-        //creates loop that gets the renderer to redraw everytime the screen is refreshed.
-        var render = function(){
-            requestAnimationFrame(render);
-            renderer.render(scene, camera);
-
-            if(isSpawning)
-            {
-                for(var i = 0; i < 5; i++)
-                {
-                    var raycaster = new THREE.Raycaster();
-                    var rayMouse = new THREE.Vector2();
-                    rayMouse.x = THREE.MathUtils.randFloat(-0.75,0.75);
-                    rayMouse.y = THREE.MathUtils.randFloat(-0.75,0.75);
-
-                    var intersects = new THREE.Vector3();
-                    raycaster.setFromCamera(rayMouse, camera );
-                    raycaster.ray.intersectPlane(rayPlane, intersects);
-                    console.log(i);
-                    console.log(intersects);
-                    intersects.z = THREE.MathUtils.randFloat(-4,2);
-                    createMesh(intersects);
-
-                    if(i == 4){
-                        isSpawning = false;
-                    }
-                }
-            }
-
-        }
-
-        render();
-
-        //Init raycaster for mouse clicks
-        var raycaster = new THREE.Raycaster();
-        var mouse = new THREE.Vector2();
-
+        //EVENT - On Mouse Click 
         function OnMouseClick(event){
+            var raycaster = new THREE.Raycaster();
+            var mouse = new THREE.Vector2();
             event.preventDefault();
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -140,12 +108,12 @@
             }
         }
 
+        //EVENT On mouse move
         function OnMouseMove(event){
-
+            //Do Stuff
         }
-        
-        window.addEventListener('click', OnMouseClick);
-        window.addEventListener('mousemove', OnMouseMove);
+
+        //USEFUL FUNCTIONS//
 
         function getRandomIntInclusive(min, max){
            min = Math.ceil(min);
@@ -153,8 +121,45 @@
            return Math.floor(Math.random() * (max - min + 1) + min);
        }
 
-        //Render scene
-        //renderer.render(scene, camera);
+       function resizeend() {
+            if (new Date() - rtime < delta) {
+                setTimeout(resizeend, delta);
+            } else {
+
+
+                //alert('Done resizing');
+            }               
+        }
+
+        function createMesh(newPosition){
+            var geometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+            var material = new THREE.MeshPhongMaterial({color: Math.random() * 0xffffff, specular : 0xFFFFFF, shininess : 50});
+            var mesh = new THREE.Mesh(geometry, material);
+            mesh.position.x = newPosition.x;
+            mesh.position.y = newPosition.y;
+            mesh.position.z = newPosition.z;
+            scene.add(mesh);
+            console.log(mesh.position);
+            console.log(newPosition);
+        }
+
+        function getRandomPointFromCamera(){
+            var rayPlane = new THREE.Plane( new THREE.Vector3( 0, 0, 1 ), 0 );
+            var raycaster = new THREE.Raycaster();
+            var rayMouse = new THREE.Vector2();            
+            var intersects = new THREE.Vector3();
+
+            rayMouse.x = THREE.MathUtils.randFloat(-0.75,0.75);
+            rayMouse.y = THREE.MathUtils.randFloat(-0.75,0.75);
+
+            raycaster.setFromCamera(rayMouse, camera );
+
+            raycaster.ray.intersectPlane(rayPlane, intersects);
+            intersects.z = THREE.MathUtils.randFloat(-4,2);
+
+            return intersects;
+        }
+
     </script>
     
 </body>
